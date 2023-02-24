@@ -16,14 +16,17 @@ import { Logger } from "./Logger";
 import { CommandNamespace } from "./types/CommandNamespace";
 import { EventNamespace } from "./types/EventNamespace";
 
-export class Client<Ready extends boolean> extends BaseClient<Ready> {
+export class Client<Singleton = any> extends BaseClient<true> {
     public commands = new Collection<string, CommandNamespace & { autowiredCategory: string }>();
     public events = new Collection<string, EventNamespace & { autowiredCategory: string }>();
+
+    public singleton: Singleton;
+
     private _token: string;
     private _postCommandsOnReady = false;
 
-    public static createDefault(token: string, intents?: BitFieldResolvable<GatewayIntentsString, number>) {
-        return new Client({
+    public static createDefault<Singleton>(token: string, intents?: BitFieldResolvable<GatewayIntentsString, number>) {
+        return new Client<Singleton>({
             intents: intents ?? [
                 GatewayIntentBits.Guilds,
                 GatewayIntentBits.GuildModeration,
@@ -40,6 +43,10 @@ export class Client<Ready extends boolean> extends BaseClient<Ready> {
     private constructor(options: ClientOptions & { token: string }) {
         super(options);
         this._token = options.token;
+    }
+
+    public useDependencySingleton(singleton: Singleton) {
+        this.singleton = singleton;
     }
 
     public login() {
@@ -75,7 +82,7 @@ export class Client<Ready extends boolean> extends BaseClient<Ready> {
                 }
             }
         },
-        "ready": async(c: Client<true>) => {
+        "ready": async(c: Client<unknown>) => {
             Logger.info("Logged in as " + c.user.tag);
             if (this._postCommandsOnReady) this.postCommands();
         }

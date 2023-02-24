@@ -7,8 +7,8 @@ export interface CommandProps {
     needsDefer: boolean
 }
 
-export interface CommandRunOpts<T extends boolean> {
-    client: Client
+export interface CommandRunOpts<T extends boolean, Singleton> {
+    client: Client<Singleton>
     interaction: SlashCommandInteraction<T>
 }
 
@@ -17,5 +17,5 @@ export type CommandData = ChatInputApplicationCommandData
 export interface CommandNamespace {
     commandProps: CommandProps
     commandData: CommandData
-    handle(opts: CommandRunOpts<boolean>): Promise<void>
+    handle(opts: CommandRunOpts<boolean, any>): Promise<void>
 }
