@@ -5,19 +5,22 @@ import {
     Collection,
     GatewayIntentBits,
     GatewayIntentsString,
+    Interaction,
     REST,
     Routes
 } from "discord.js";
 import { readdirSync } from "fs";
 import { join } from "path";
+import { objectIncludesKey } from "./helpers/objectIncludesKey";
 import { Logger } from "./Logger";
 import { CommandNamespace } from "./types/CommandNamespace";
 import { EventNamespace } from "./types/EventNamespace";
 
-export class Client extends BaseClient {
+export class Client<Ready extends boolean> extends BaseClient<Ready> {
     public commands = new Collection<string, CommandNamespace & { autowiredCategory: string }>();
     public events = new Collection<string, EventNamespace & { autowiredCategory: string }>();
     private _token: string;
+    private _postCommandsOnReady = false;
 
     public static createDefault(token: string, intents?: BitFieldResolvable<GatewayIntentsString, number>) {
         return new Client({
@@ -27,7 +30,8 @@ export class Client extends BaseClient {
                 GatewayIntentBits.AutoModerationConfiguration,
                 GatewayIntentBits.AutoModerationExecution,
                 GatewayIntentBits.GuildMessages,
-                GatewayIntentBits.GuildMembers
+                GatewayIntentBits.GuildMembers,
+                GatewayIntentBits.MessageContent
             ],
             token,
         });
@@ -38,31 +42,31 @@ export class Client extends BaseClient {
         this._token = options.token;
     }
 
-    login() {
+    public login() {
         this.selfListenEvents();
-        this.selfListenInteractions();
-        this.once("ready", () => { Logger.info("Logged in as " + this.user!.tag); });
         return super.login(this._token);
     }
 
+    public postCommandsOnReady() {
+        this._postCommandsOnReady = true;
+    }
+
     public async postCommands() {
-        this.once("ready", async() => {
-            const rest = new REST({ version: "10" }).setToken(this._token);
+        const rest = new REST({ version: "10" }).setToken(this._token);
 
-            const data = this.commands.map(cmd => cmd.commandData);
+        const data = this.commands.map(cmd => cmd.commandData);
 
-            rest.put(Routes.applicationCommands(this.application!.id), {
-                body: data
-            }).then(() => {
-                Logger.info("Commands posted");
-            }).catch((err) => {
-                Logger.error(err);
-            });
+        rest.put(Routes.applicationCommands(this.application!.id), {
+            body: data
+        }).then(() => {
+            Logger.info("Commands posted");
+        }).catch((err) => {
+            Logger.error(err);
         });
     }
 
-    private async selfListenInteractions() {
-        this.on("interactionCreate", async(interaction) => {
+    private nextS = {
+        "interactionCreate": async(interaction: Interaction) => {
             if (interaction.isChatInputCommand()) {
                 const cmd = this.commands.get(interaction.commandName);
                 if (cmd && cmd.commandProps.enabled) {
@@ -70,12 +74,22 @@ export class Client extends BaseClient {
                     cmd.handle({ client: this, interaction }).catch((err) => { Logger.error(err); });
                 }
             }
-        });
-    }
+        },
+        "ready": async(c: Client<true>) => {
+            Logger.info("Logged in as " + c.user.tag);
+            if (this._postCommandsOnReady) this.postCommands();
+        }
+    };
 
     private async selfListenEvents() {
         this.events.forEach(evt => {
-            this.on(evt.eventProps.name, evt.handle);
+            if (objectIncludesKey(this.nextS, evt.eventProps.name)) {
+                this.on(evt.eventProps.name, (...params: any[]) => {
+                    evt.handle(...params, this.nextS[evt.eventProps.name]);
+                });
+            } else {
+                this.on(evt.eventProps.name, evt.handle);
+            }
         });
     }
 
@@ -107,7 +121,7 @@ export class Client extends BaseClient {
     private autowireSomething(wireType: "command" | "event", wireDir: string) {
         const wiredAbsolutePath = join(__dirname, "..", wireDir);
 
-        Logger.info(`Autowiring ${wireType} from ${wiredAbsolutePath}`);
+        Logger.info(`Autowiring ${wireType}s from ${wiredAbsolutePath}`);
 
         const wiredGroups = readdirSync(wiredAbsolutePath);
 
