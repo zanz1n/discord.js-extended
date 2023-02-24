@@ -12,9 +12,11 @@ import { readdirSync } from "fs";
 import { join } from "path";
 import { Logger } from "./Logger";
 import { CommandNamespace } from "./types/CommandNamespace";
+import { EventNamespace } from "./types/EventNamespace";
 
 export class Client extends BaseClient {
     public commands = new Collection<string, CommandNamespace & { autowiredCategory: string }>();
+    public events = new Collection<string, EventNamespace & { autowiredCategory: string }>();
     private _token: string;
 
     public static createDefault(token: string, intents?: BitFieldResolvable<GatewayIntentsString, number>) {
@@ -37,6 +39,7 @@ export class Client extends BaseClient {
     }
 
     login() {
+        this.selfListenEvents();
         this.selfListenInteractions();
         this.once("ready", () => { Logger.info("Logged in as " + this.user!.tag); });
         return super.login(this._token);
@@ -62,11 +65,17 @@ export class Client extends BaseClient {
         this.on("interactionCreate", async(interaction) => {
             if (interaction.isChatInputCommand()) {
                 const cmd = this.commands.get(interaction.commandName);
-                if (cmd && cmd.commandInfo.enabled) {
-                    if (cmd.commandInfo.needsDefer) await interaction.deferReply();
+                if (cmd && cmd.commandProps.enabled) {
+                    if (cmd.commandProps.needsDefer) await interaction.deferReply();
                     cmd.handle({ client: this, interaction }).catch((err) => { Logger.error(err); });
                 }
             }
+        });
+    }
+
+    private async selfListenEvents() {
+        this.events.forEach(evt => {
+            this.on(evt.eventProps.name, evt.handle);
         });
     }
 
@@ -74,8 +83,8 @@ export class Client extends BaseClient {
         if (cmd) {
             return (
                 typeof cmd == "object" &&
-                "commandInfo" in cmd &&
-                typeof cmd["commandInfo"] == "object" &&
+                "commandProps" in cmd &&
+                typeof cmd["commandProps"] == "object" &&
                 "commandData" in cmd &&
                 typeof cmd["commandData"] == "object" &&
                 "handle" in cmd
@@ -83,36 +92,74 @@ export class Client extends BaseClient {
         } else return false;
     }
 
-    public autowireCommands(commandsDir = "commands") {
-        const commandsAbsolutePath = join(__dirname, "..", commandsDir);
-        Logger.info(`Autowiring commands from ${commandsAbsolutePath}`);
+    private validateEventNamespace(evt: unknown): boolean {
+        if (evt) {
+            return (
+                typeof evt == "object" &&
+                "eventProps" in evt &&
+                typeof evt["eventProps"] == "object" &&
+                "handle" in evt
+            );
+        }
+        else return false;
+    }
 
-        const commandGroups = readdirSync(commandsAbsolutePath);
+    private autowireSomething(wireType: "command" | "event", wireDir: string) {
+        const wiredAbsolutePath = join(__dirname, "..", wireDir);
 
-        commandGroups.forEach(commandGroup => {
-            const commandsInGroup = readdirSync(join(commandsAbsolutePath, commandGroup))
+        Logger.info(`Autowiring ${wireType} from ${wiredAbsolutePath}`);
+
+        const wiredGroups = readdirSync(wiredAbsolutePath);
+
+        wiredGroups.forEach(wiredGroup => {
+            const commandsInGroup = readdirSync(join(wiredAbsolutePath, wiredGroup))
                 .filter(cmd =>
-                    cmd.endsWith(".command.ts") || cmd.endsWith(".command.js")
+                    cmd.endsWith(`.${wireType}.ts`) || cmd.endsWith(`.${wireType}.js`)
                 );
 
-            commandsInGroup.forEach(commandInGroup => {
-                const cmdFile = join(commandsAbsolutePath, commandGroup) + "/" + commandInGroup;
+            commandsInGroup.forEach(wiredInGroup => {
+                const wiredFile = join(wiredAbsolutePath, wiredGroup) + "/" + wiredInGroup;
 
-                // eslint-disable-next-line @typescript-eslint/no-var-requires
-                const cmd = require(cmdFile) as CommandNamespace;
+                if (wireType == "command") {
+                    // eslint-disable-next-line @typescript-eslint/no-var-requires
+                    const cmd = require(wiredFile) as CommandNamespace;
 
-                if (this.validateCommandNamespace(cmd)) {
-                    this.commands.set(cmd.commandData.name, {
-                        autowiredCategory: commandGroup,
-                        commandData: cmd.commandData,
-                        commandInfo: cmd.commandInfo,
-                        handle: cmd.handle
-                    });
-                    Logger.info(`Autowired command { ${commandGroup.toUpperCase()} ${cmd.commandData.name} }`);
-                } else {
-                    Logger.info(`Failed to autowire command ${cmdFile}, invalid exported props`);
+                    if (this.validateCommandNamespace(cmd)) {
+                        this.commands.set(cmd.commandData.name, {
+                            autowiredCategory: wiredGroup,
+                            commandData: cmd.commandData,
+                            commandProps: cmd.commandProps,
+                            handle: cmd.handle
+                        });
+                        Logger.info(`Autowired command { ${wiredGroup.toUpperCase()} ${cmd.commandData.name} }`);
+                    } else {
+                        Logger.error(`Failed to autowire command ${wiredFile}, invalid exported props`);
+                    }
+                }
+                else if (wireType == "event") {
+                    // eslint-disable-next-line @typescript-eslint/no-var-requires
+                    const evt = require(wiredFile) as EventNamespace;
+
+                    if (this.validateEventNamespace(evt)) {
+                        this.events.set(evt.eventProps.name, {
+                            autowiredCategory: wiredGroup,
+                            eventProps: evt.eventProps,
+                            handle: evt.handle
+                        });
+                        Logger.info(`Autowired event { ${wiredGroup.toUpperCase()} ${evt.eventProps.name} }`);
+                    } else {
+                        Logger.error(`Failed to autowire event ${wiredFile}, invalid exported props`);
+                    }
                 }
             });
         });
+    }
+
+    public autowireCommands(commandsDir = "./commands") {
+        return this.autowireSomething("command", commandsDir);
+    }
+
+    public autowireEvents(eventDir = "./events") {
+        return this.autowireSomething("event", eventDir);
     }
 }
