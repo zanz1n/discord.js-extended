@@ -59,9 +59,9 @@ model member {
   dj          Boolean  @default(false) @map("dj")
   playAllowed Boolean  @default(false) @map("play_allowed")
   guild       guild    @relation(fields: [guildId], references: [id])
-  guildId     String   @unique @map("guild_id")
+  guildId     String   @map("guild_id")
   user        user     @relation(fields: [userId], references: [id])
-  userId      String   @unique @map("user_id")
+  userId      String   @map("user_id")
 
   @@index([id, guildId, userId])
   @@map("member")
