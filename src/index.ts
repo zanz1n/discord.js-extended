@@ -8,3 +8,4 @@ export * from "./types/InvalidNamespaceError.js";
 export * from "./types/SlashCommandInteraction.js";
 export * from "./helpers/mention.js";
 export * from "./helpers/object-includes-key.js";
+export * from "./types/Singleton.js";
