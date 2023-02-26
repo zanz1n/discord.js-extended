@@ -1,17 +1,14 @@
 {
   "name": "basileia-bot",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "dist/inedx.js",
+  "types": "dist/index.d.ts",
   "author": "Izan Rodrigues <izanrodrigues999@gmail.com>",
   "type": "module",
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "dev:bot": "nodemon --watch 'src/' ./run.cjs -e ts",
-    "start:bot": "node dist/index.js",
-    "dev:worker": "yarn nodemon --watch 'src/' --exec 'node run.cjs --worker' -e ts",
-    "start:worker": "node dist/worker.js"
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix"
   },
   "devDependencies": {
     "@types/debug": "^4.1.7",
@@ -21,13 +18,9 @@
     "dotenv": "^16.0.3",
     "eslint": "^8.34.0",
     "nodemon": "^2.0.20",
-    "prisma": "^4.8.0",
-    "ts-node": "^10.9.1",
     "typescript": "^4.9.5"
   },
   "dependencies": {
-    "@prisma/client": "^4.8.0",
-    "bullmq": "^3.8.0",
     "chalk": "^5.2.0",
     "debug": "^4.3.4",
     "discord.js": "^14.7.1"
