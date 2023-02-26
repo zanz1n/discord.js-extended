@@ -17,10 +17,7 @@ import { Logger } from "./Logger.js";
 import { CommandNamespace } from "./types/CommandNamespace.js";
 import { EventNamespace } from "./types/EventNamespace.js";
 import chalk from "chalk";
-import url from "url";
 import { InvalidNamespaceError } from "./types/InvalidNamespaceError.js";
-
-const __dirname = join("..", "src" , url.fileURLToPath(new URL(".", import.meta.url)));
 
 type AutoWiredEventType<T extends EventNamespace | CommandNamespace> = {
     namespace: T
@@ -36,11 +33,13 @@ interface BaseClientEvents extends ClientEvents {
 export type ListenerCallback<K extends keyof BaseClientEvents> = (...args: BaseClientEvents[K]) => Awaitable<void>
 
 export class Client<Singleton = any> extends BaseClient<true> {
+
     public on<K extends keyof BaseClientEvents>(event: K, listener: ListenerCallback<K>) {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         return super.on(event, listener);
     }
+
     public emit<K extends keyof BaseClientEvents>(event: K, ...args: BaseClientEvents[K]) {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
@@ -53,6 +52,10 @@ export class Client<Singleton = any> extends BaseClient<true> {
 
     private _token: string;
     private _postCommandsOnReady = false;
+
+    private dirname = "";
+
+    public forRootWiring(dir: string) { this.dirname = dir; }
 
     public static createDefault<Singleton>(token: string, intents?: BitFieldResolvable<GatewayIntentsString, number>) {
         return new Client<Singleton>({
@@ -163,7 +166,7 @@ export class Client<Singleton = any> extends BaseClient<true> {
     }
 
     private autowireSomething(wireType: "command" | "event", wireDir: string) {
-        const wiredAbsolutePath = join(__dirname, "..", wireDir);
+        const wiredAbsolutePath = join(this.dirname, wireDir);
 
         Logger.info(`Autowiring ${wireType}s from ${wiredAbsolutePath}`);
 
