@@ -1,5 +1,5 @@
 # compiled output
-types/
+/types
 /dist
 /node_modules
 
@@ -44,3 +44,4 @@ lerna-debug.log*
 # Dev fake data creation data
 *.dev.js
 *.dev.sql
+test.cjs
