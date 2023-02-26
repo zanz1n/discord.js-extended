@@ -20,7 +20,7 @@ import chalk from "chalk";
 import url from "url";
 import { InvalidNamespaceError } from "./types/InvalidNamespaceError.js";
 
-const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
+const __dirname = join("..", "src" , url.fileURLToPath(new URL(".", import.meta.url)));
 
 type AutoWiredEventType<T extends EventNamespace | CommandNamespace> = {
     namespace: T
