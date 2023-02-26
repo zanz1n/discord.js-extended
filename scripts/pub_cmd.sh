@@ -1,0 +1,1 @@
+npm publish --scope=@zanz1n --access public

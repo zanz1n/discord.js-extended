@@ -22,7 +22,7 @@ if (buildProcess.status !== 0) {
 packageJson.version = version;
 writeFileSync(join(__dirname, "..", "package.json"), JSON.stringify(packageJson, null, 2) + "\n");
 
-const publishProcess = spawnSync("npm", ["publish", "--scope=@zanz1n", "--access", "public"], { stdio: "inherit" });
+const publishProcess = spawnSync(process.env.SHELL ?? "sh", ["scripts/pub_cmd.sh"], { stdio: "inherit" });
 if (publishProcess.status !== 0) {
     console.log("Publish failed");
     process.exit(buildProcess.status);
