@@ -3,3 +3,4 @@ node_modules/
 scripts/
 src/
 tsconfig.json
+test.cjs
