@@ -4,7 +4,7 @@
   "main": "dist/index.js",
   "types": "types/index.d.ts",
   "author": "Izan Rodrigues <izanrodrigues999@gmail.com>",
-  "type": "module",
+  "type": "commonjs",
   "license": "MIT",
   "scripts": {
     "build": "node scripts/build.cjs",
@@ -21,7 +21,7 @@
     "typescript": "^4.9.5"
   },
   "dependencies": {
-    "chalk": "^5.2.0",
+    "chalk": "4.1.2",
     "debug": "^4.3.4",
     "discord.js": "^14.7.1"
   }
