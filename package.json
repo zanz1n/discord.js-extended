@@ -7,7 +7,8 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "build": "node build.cjs",
+    "build": "node scripts/build.cjs",
+    "publish": "node scripts/publish.cjs",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix"
   },
   "devDependencies": {
