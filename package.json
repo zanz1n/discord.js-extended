@@ -2,7 +2,7 @@
   "name": "@zanz1n/discord.js",
   "version": "1.0.2",
   "main": "dist/index.js",
-  "types": "./types/index.d.ts",
+  "types": "types/index.d.ts",
   "author": "Izan Rodrigues <izanrodrigues999@gmail.com>",
   "type": "module",
   "license": "MIT",
