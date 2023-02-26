@@ -5,6 +5,7 @@
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "declaration": true,
+    "declarationDir": "./types",
     "newLine": "lf",
     "allowJs": true,
     "esModuleInterop": true,
@@ -23,5 +24,5 @@
     "noFallthroughCasesInSwitch": false,
     "resolveJsonModule": true
   },
-  "exclude": ["node_modules", "test", "dist", "**/*spec.ts", "run.cjs"]
+  "exclude": ["node_modules", "test", "dist", "**/*spec.ts", "build.cjs", "types"]
 }
