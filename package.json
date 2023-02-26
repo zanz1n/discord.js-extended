@@ -8,7 +8,8 @@
   "license": "MIT",
   "scripts": {
     "build": "node scripts/build.cjs",
-    "publish": "node scripts/publish.cjs",
+    "pub": "node scripts/publish.cjs",
+    "clear": "node scripts/clear.cjs",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix"
   },
   "devDependencies": {
