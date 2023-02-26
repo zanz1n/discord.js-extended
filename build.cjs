@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 const { spawnSync } = require("child_process");
-spawnSync("rm", ["-rf", "dist"], { stdio: "inherit" });
+spawnSync("rm", ["-rf", "dist", "types"], { stdio: "inherit" });
 const buildProcess = spawnSync("node", ["node_modules/.bin/tsc"], { stdio: "inherit" });
 if (buildProcess.status !== 0) {
     console.log("TypeScript build failed");
