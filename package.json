@@ -1,6 +1,6 @@
 {
   "name": "@zanz1n/discord.js",
-  "version": "1.0.9",
+  "version": "1.0.11",
   "main": "dist/index.js",
   "types": "types/index.d.ts",
   "author": "Izan Rodrigues <izanrodrigues999@gmail.com>",
