@@ -17,7 +17,7 @@ import { join } from "path";
 import { Logger } from "./Logger.js";
 import { CommandNamespace } from "./types/CommandNamespace.js";
 import { EventNamespace } from "./types/EventNamespace.js";
-import { GenericInteractionNamespace, GenericInteractionType } from "types/GenericInteractionNamespace.js";
+import { GenericInteractionNamespace, GenericInteractionType } from "./types/GenericInteractionNamespace.js";
 import chalk from "chalk";
 import { InvalidNamespaceError } from "./types/InvalidNamespaceError.js";
 
