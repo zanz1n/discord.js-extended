@@ -9,25 +9,28 @@ import {
     GatewayIntentsString,
     Interaction,
     REST,
-    Routes
+    Routes,
+    InteractionType
 } from "discord.js";
 import { readdirSync } from "fs";
 import { join } from "path";
 import { Logger } from "./Logger.js";
 import { CommandNamespace } from "./types/CommandNamespace.js";
 import { EventNamespace } from "./types/EventNamespace.js";
+import { GenericInteractionNamespace, GenericInteractionType } from "types/GenericInteractionNamespace.js";
 import chalk from "chalk";
 import { InvalidNamespaceError } from "./types/InvalidNamespaceError.js";
 
-type AutoWiredEventType<T extends EventNamespace | CommandNamespace> = {
+type AutoWiredEventType<T extends EventNamespace | CommandNamespace | GenericInteractionNamespace> = {
     namespace: T
-    wireType: "event" | "command"
+    wireType: "event" | "command" | "genericInteraction"
     wiredGroup: string
 }
 
 interface BaseClientEvents extends ClientEvents {
     autowiredEvent: [data: AutoWiredEventType<EventNamespace>]
     autowiredCommand: [data: AutoWiredEventType<CommandNamespace>]
+    autowiredGenericInteraction: [data: AutoWiredEventType<GenericInteractionNamespace>]
 }
 
 export type ListenerCallback<K extends keyof BaseClientEvents> = (...args: BaseClientEvents[K]) => Awaitable<void>
@@ -47,6 +50,7 @@ export class Client<Singleton = any> extends BaseClient<true> {
     }
 
     public commands = new Collection<string, CommandNamespace & { autowiredCategory: string }>();
+    public genericInteractions = new Collection<string, GenericInteractionNamespace & { autowiredCategory: string }>();
 
     public singleton: Singleton;
 
@@ -106,6 +110,23 @@ export class Client<Singleton = any> extends BaseClient<true> {
 
     private nextS = {
         "interactionCreate": async(interaction: Interaction) => {
+            const name: string | undefined = interaction["commandName"] ?? interaction["customId"];
+
+            if (name) {
+                const gint = this.genericInteractions.get(name);
+                if (gint && gint.genericInteractionProps.enabled) {
+                    if (gint.genericInteractionProps.type == GenericInteractionType.ButtonIntegrable) {
+                        if (
+                            interaction.type == InteractionType.ApplicationCommand ||
+                            interaction.type == InteractionType.ApplicationCommandAutocomplete ||
+                            interaction.type == InteractionType.MessageComponent
+                        ) {
+                            gint.handle({ client: this, interaction }).catch((err) => { Logger.error(err); });
+                        }
+                    }
+                }
+            }
+
             if (interaction.isChatInputCommand()) {
                 const cmd = this.commands.get(interaction.commandName);
                 if (cmd && cmd.commandProps.enabled) {
@@ -132,11 +153,17 @@ export class Client<Singleton = any> extends BaseClient<true> {
             Logger.info(`Autowired command { ${wiredGroup} ${namespace.commandData.name} }`);
             this.commands.set(namespace.commandData.name, { ...namespace, autowiredCategory: wiredGroup });
         });
+
+        this.on("autowiredGenericInteraction", ({ namespace, wiredGroup }) => {
+            Logger.info(`Autowired interaction { ${wiredGroup} ${namespace.genericInteractionData.name} }`);
+            this.genericInteractions.set(namespace.genericInteractionData.name, { ...namespace, autowiredCategory: wiredGroup });
+        });
     }
 
     private validateNamespace(type: string, namespace: unknown): boolean {
         if (type == "command") return this.validateNamespace__command(namespace);
         else if (type == "event") return this.validateNamespace__event(namespace);
+        else if (type == "genericInteraction") return this.validateNamespace__genericInteraction(namespace);
         else throw new InvalidNamespaceError(type);
     }
 
@@ -165,7 +192,19 @@ export class Client<Singleton = any> extends BaseClient<true> {
         else return false;
     }
 
-    private autowireSomething(wireType: "command" | "event", wireDir: string) {
+    private validateNamespace__genericInteraction(gcmd: unknown): boolean {
+        if (gcmd) {
+            return (
+                typeof gcmd == "object" &&
+                "genericInteractionProps" in gcmd &&
+                typeof gcmd["genericInteractionProps"] == "object" &&
+                "handle" in gcmd
+            );
+        }
+        else return false;
+    }
+
+    private autowireSomething(wireType: "command" | "event" | "genericInteraction", wireDir: string) {
         const wiredAbsolutePath = join(this.dirname, wireDir);
 
         Logger.info(`Autowiring ${wireType}s from ${wiredAbsolutePath}`);
@@ -187,8 +226,6 @@ export class Client<Singleton = any> extends BaseClient<true> {
                     const wiredModule = wired.default ?? wired;
 
                     if (this.validateNamespace(wireType, wiredModule)) {
-                        const nameProp = wireType == "command" ? "commandData" : "eventProps";
-
                         if (wireType == "command") {
                             this.emit("autowiredCommand", {
                                 namespace: wiredModule,
@@ -197,6 +234,12 @@ export class Client<Singleton = any> extends BaseClient<true> {
                             });
                         } else if (wireType == "event") {
                             this.emit("autowiredEvent", {
+                                namespace: wiredModule,
+                                wiredGroup: wiredGroup.toUpperCase(),
+                                wireType: wireType,
+                            });
+                        } else if (wireType == "genericInteraction") {
+                            this.emit("autowiredGenericInteraction", {
                                 namespace: wiredModule,
                                 wiredGroup: wiredGroup.toUpperCase(),
                                 wireType: wireType,
@@ -225,5 +268,9 @@ export class Client<Singleton = any> extends BaseClient<true> {
 
     public autowireEvents(eventDir = "./events") {
         return this.autowireSomething("event", eventDir);
+    }
+
+    public autowireInteractions(interactionDir = "./interactions") {
+        return this.autowireSomething("genericInteraction", interactionDir);
     }
 }
