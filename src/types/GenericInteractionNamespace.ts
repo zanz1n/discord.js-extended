@@ -11,7 +11,7 @@ export enum GenericInteractionType {
     ButtonIntegrable = "BUTTON_INTEGRABLE"
 }
 
-export type ButtonIntegrableInteractio = ApplicationCommandData | ChatInputCommandInteraction | ButtonInteraction
+export type ButtonIntegrableInteraction = ApplicationCommandData | ChatInputCommandInteraction | ButtonInteraction
 
 export interface GenericInteractionProps {
     enabled: boolean
