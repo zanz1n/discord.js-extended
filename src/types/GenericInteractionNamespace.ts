@@ -4,7 +4,6 @@ import {
     ButtonInteraction,
     ChatInputApplicationCommandData,
     ChatInputCommandInteraction,
-    Interaction
 } from "discord.js";
 
 export enum GenericInteractionType {
@@ -18,9 +17,9 @@ export interface GenericInteractionProps {
     type: GenericInteractionType
 }
 
-export interface GenericInteractionRunOpts<T extends Interaction, Singleton> {
+export interface GenericInteractionRunOpts<Singleton> {
     client: Client<Singleton>
-    interaction: T
+    interaction: ButtonIntegrableInteraction
 }
 
 export type GenericInteractionData = ChatInputApplicationCommandData
@@ -28,5 +27,5 @@ export type GenericInteractionData = ChatInputApplicationCommandData
 export interface GenericInteractionNamespace {
     genericInteractionProps: GenericInteractionProps
     genericInteractionData: GenericInteractionData
-    handle(opts: GenericInteractionRunOpts<Interaction, any>): Promise<void>   
+    handle(opts: GenericInteractionRunOpts<any>): Promise<void>   
 }
