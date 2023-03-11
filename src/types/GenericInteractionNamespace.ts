@@ -1,16 +1,25 @@
 import { Client } from "../Client.js";
 import { 
-    ApplicationCommandData,
+    AnySelectMenuInteraction,
+    AutocompleteInteraction,
     ButtonInteraction,
     ChatInputApplicationCommandData,
     ChatInputCommandInteraction,
+    MessageContextMenuCommandInteraction,
+    UserContextMenuCommandInteraction,
 } from "discord.js";
 
 export enum GenericInteractionType {
     ButtonIntegrable = "BUTTON_INTEGRABLE"
 }
 
-export type ButtonIntegrableInteraction = ApplicationCommandData | ChatInputCommandInteraction | ButtonInteraction
+export type ButtonIntegrableInteraction =
+    ChatInputCommandInteraction |
+    MessageContextMenuCommandInteraction |
+    UserContextMenuCommandInteraction |
+    AnySelectMenuInteraction |
+    ButtonInteraction |
+    AutocompleteInteraction
 
 export interface GenericInteractionProps {
     enabled: boolean
